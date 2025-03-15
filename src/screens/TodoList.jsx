@@ -11,14 +11,12 @@ import TodoItems from './TodoItems';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TodoList = () => {
-  const [tasks, setTasks] = useState([
-    {id: 1, text: 'Doctor Appointment'},
-    {id: 2, text: 'Meeting at School'},
-  ]);
+  const [tasks, setTasks] = useState([]);
   const [text, setText] = useState('');
-  const [checked, setChecked] = useState(false);
   const [update, setUpdate] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [search, setSearch] = useState('');
+  const [filteredTasks, setFilteredTasks] = useState([]);
 
   useEffect(() => {
     loadTodosFromLocalStorage();
@@ -31,32 +29,37 @@ const TodoList = () => {
       console.log('Error saving data:', error);
     }
   };
+
   const loadTodosFromLocalStorage = async () => {
     try {
       const getTodos = await AsyncStorage.getItem('todos');
       if (getTodos) {
-        setTasks(JSON.parse(getTodos));
+        const parsedTodos = JSON.parse(getTodos);
+        setTasks(parsedTodos);
+        setFilteredTasks(parsedTodos);
       }
     } catch (error) {
       console.log('Error loading data:', error);
     }
   };
+
   const handleTask = () => {
     if (!text) {
-      Alert.alert('Task is  required');
+      Alert.alert('Task is required');
       return;
     }
-    const newTodo = [...tasks, {id: tasks.length + 1, text}];
+    const newTodo = [...tasks, {id: tasks.length + 1, text, checked: false}];
     setTasks(newTodo);
+    setFilteredTasks(newTodo);
     saveTodosInLocalStorage(newTodo);
     setText('');
   };
+
   const handleDelete = id => {
     const deletedTask = tasks.filter(task => task.id !== id);
     setTasks(deletedTask);
+    setFilteredTasks(deletedTask);
     saveTodosInLocalStorage(deletedTask);
-
-    Alert.alert('Task Deleted');
   };
 
   const handleEdit = id => {
@@ -65,39 +68,64 @@ const TodoList = () => {
     setEditId(id);
     setText(task.text);
   };
+
   const updateTask = id => {
-    setTasks(tasks.map(task => (task.id === id ? {id, text} : task)));
+    const updatedTasks = tasks.map(task => (task.id === id ? {...task, text} : task));
+    setTasks(updatedTasks);
+    setFilteredTasks(updatedTasks);
     setText('');
     setUpdate(false);
     setEditId(null);
+    saveTodosInLocalStorage(updatedTasks);
   };
 
   const handleChecked = id => {
-    setTasks(
-      tasks.map(task =>
-        task.id === id ? {...task, checked: !task.checked} : task,
-      ),
+    const updatedTasks = tasks.map(task =>
+      task.id === id ? {...task, checked: !task.checked} : task,
     );
+    setTasks(updatedTasks);
+    setFilteredTasks(updatedTasks);
+    saveTodosInLocalStorage(updatedTasks);
+  };
+
+  const handleSearch = text => {
+    setSearch(text);
+    if (text.trim() === '') {
+      setFilteredTasks(tasks);
+    } else {
+      const searchItem = tasks.filter(task =>
+        task.text.toLowerCase().includes(text.toLowerCase()),
+      );
+      setFilteredTasks(searchItem);
+    }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Todo Task's</Text>
+      <View style={styles.search}>
+        <TextInput
+          style={{width: '70%', padding: 10, borderRadius: 10}}
+          placeholder="Search Item..."
+          placeholderTextColor={'black'}
+          value={search}
+          onChangeText={handleSearch}
+        />
+      </View>
       <View
         style={[
           styles.taskContainer,
-          tasks.length === 0
-            ? {justifyContent: 'center', alignItems: 'center', minHeight: '70%' }
+          filteredTasks.length === 0
+            ? {justifyContent: 'center', alignItems: 'center', minHeight: '70%'}
             : null,
         ]}>
-        {tasks.length === 0 ? (
+        {filteredTasks.length === 0 ? (
           <Text style={{fontSize: 40, color: 'blue'}}>No Task's</Text>
         ) : (
-          tasks.map(task => (
+          filteredTasks.map(task => (
             <View key={task.id}>
               <TodoItems
                 task={task}
-                checked={checked}
                 handleChecked={handleChecked}
                 deleteItem={handleDelete}
                 editItem={handleEdit}
@@ -108,8 +136,9 @@ const TodoList = () => {
       </View>
       <View style={styles.input}>
         <TextInput
+          style={{width: '70%', padding: 10, borderRadius: 10}}
           placeholder="Add New Item..."
-          placeholderTextColor={"black"}
+          placeholderTextColor={'black'}
           value={text}
           onChangeText={text => setText(text)}
         />
@@ -136,12 +165,13 @@ const styles = StyleSheet.create({
   title: {
     fontWeight: 'bold',
     fontSize: 30,
+    marginBottom: 80,
     marginVertical: 20,
   },
   taskContainer: {
-    backgroundColor:"#22A7F0",
+    backgroundColor: '#22A7F0',
     padding: 10,
-    minHeight:"70%",
+    minHeight: '70%',
     borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: {
@@ -153,12 +183,33 @@ const styles = StyleSheet.create({
     elevation: 5,
     gap: 10,
   },
-
   input: {
     position: 'absolute',
     right: 20,
     left: 20,
     bottom: 30,
+    zIndex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: 'black',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    padding: 10,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  search: {
+    position: 'absolute',
+    right: 20,
+    left: 20,
+    top: 100,
     zIndex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',

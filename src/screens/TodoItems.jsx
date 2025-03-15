@@ -26,8 +26,9 @@ const TodoItems = ({task, handleChecked, deleteItem, editItem}) => {
           <Text style={[{fontSize: 18, fontWeight: 'bold'} , task.checked ? {textDecorationLine:"line-through", fontWeight:'normal'} :null]} >{task.text}</Text>
         </View>
         {
-          !task.checked && 
-        <View style={styles.btnContainer}>
+          !task.checked &&
+
+          <View style={styles.btnContainer}>
           <Pressable onPress={()=>editItem(task.id)}>
             <Text style={styles.btnEdit}>Edit</Text>
           </Pressable>
@@ -36,6 +37,7 @@ const TodoItems = ({task, handleChecked, deleteItem, editItem}) => {
           </Pressable>
         </View>
         }
+        
       </View>
     </View>
   );
